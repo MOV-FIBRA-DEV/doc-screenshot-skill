@@ -44,10 +44,24 @@ function __docAnnotate(spec) {
     });
   }
 
-  function drawPin(r, n, color) {
+  function drawPin(r, n, color, position) {
     const s = 30;
+    // position: 'top-left' (default), 'center', 'top-right', 'bottom-left', 'bottom-right',
+    //           'top', 'bottom', 'left', 'right'
+    const pos = position || 'top-left';
+    let px, py;
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    if (pos === 'center')        { px = cx - s / 2; py = cy - s / 2; }
+    else if (pos === 'top')      { px = cx - s / 2; py = r.top - s / 2; }
+    else if (pos === 'bottom')   { px = cx - s / 2; py = r.bottom - s / 2; }
+    else if (pos === 'left')     { px = r.left - s / 2; py = cy - s / 2; }
+    else if (pos === 'right')    { px = r.right - s / 2; py = cy - s / 2; }
+    else if (pos === 'top-right')    { px = r.right - s / 2; py = r.top - s / 2; }
+    else if (pos === 'bottom-left')  { px = r.left - s / 2; py = r.bottom - s / 2; }
+    else if (pos === 'bottom-right') { px = r.right - s / 2; py = r.bottom - s / 2; }
+    else /* top-left */          { px = r.left - s / 2; py = r.top - s / 2; }
     box({
-      position: 'fixed', left: (r.left - s / 2) + 'px', top: (r.top - s / 2) + 'px',
+      position: 'fixed', left: px + 'px', top: py + 'px',
       width: s + 'px', height: s + 'px', borderRadius: '50%',
       background: color, color: '#000', font: '700 16px system-ui, sans-serif',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -125,19 +139,33 @@ function __docAnnotate(spec) {
     });
   }
 
-  (spec?.items || []).forEach((item, i) => {
+  // Two-pass rendering: backgrounds first (box, spotlight, blur), then
+  // foreground elements (pin, callout, arrow) so pins are never hidden
+  // behind boxes.
+  const bgTypes = new Set(['box', 'spotlight', 'blur']);
+  const resolved = (spec?.items || []).map((item, i) => {
     const color = item.color || PALETTE[i % PALETTE.length];
     const el = item.selector ? document.querySelector(item.selector) : null;
     const r = el ? el.getBoundingClientRect() : null;
-    if (!r) { missing.push(item.selector || '(item sem seletor)'); return; }
+    if (!r) { missing.push(item.selector || '(item sem seletor)'); return null; }
+    return { item, i, color, r };
+  }).filter(Boolean);
+
+  // Pass 1: backgrounds
+  resolved.filter(e => bgTypes.has(e.item.type)).forEach(({ item, color, r }) => {
     switch (item.type) {
       case 'box':       drawBox(r, color); break;
-      case 'pin':       drawPin(r, item.number != null ? item.number : i + 1, color); break;
-      case 'callout':   drawCallout(r, item.text || '', color); break;
-      case 'arrow':     drawArrow(r, item, color); break;
       case 'spotlight': drawSpotlight(r); break;
       case 'blur':      drawBlur(r); break;
-      default: return;
+    }
+    drawn.push(item.type);
+  });
+  // Pass 2: foreground (rendered on top)
+  resolved.filter(e => !bgTypes.has(e.item.type)).forEach(({ item, i, color, r }) => {
+    switch (item.type) {
+      case 'pin':       drawPin(r, item.number != null ? item.number : i + 1, color, item.position); break;
+      case 'callout':   drawCallout(r, item.text || '', color); break;
+      case 'arrow':     drawArrow(r, item, color); break;
     }
     drawn.push(item.type);
   });

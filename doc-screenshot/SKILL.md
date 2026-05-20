@@ -55,7 +55,7 @@ Carregue o script de anotação uma vez:
 O `spec` é `{ items: [...] }`. Todo item tem um `selector` (CSS) obrigatório e
 um `type`. Tipos e campos:
 - `box` — caixa ao redor do elemento.
-- `pin` — pino numerado; `number` opcional (sem ele, numera 1, 2, 3… na ordem dos itens).
+- `pin` — pino numerado; `number` opcional (sem ele, numera 1, 2, 3… na ordem dos itens). `position` opcional: `top-left` (padrão), `center`, `top`, `bottom`, `left`, `right`, `top-right`, `bottom-left`, `bottom-right`.
 - `callout` — `text` com o rótulo descritivo.
 - `arrow` — `fromSide` opcional (`top`/`bottom`/`left`/`right`, padrão `top`), `length` opcional (padrão `80`).
 - `spotlight` — escurece o resto da tela, destacando o elemento.
